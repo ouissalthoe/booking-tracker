@@ -1,196 +1,154 @@
+import os
 import time
 import datetime
+import random
 import re
 import requests
 
-from selenium import webdriver
+import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import ElementClickInterceptedException
 
 
-# ------------------ TELEGRAM INFO ------------------
-BOT_TOKEN = "8752290947:AAGdhXELc0JY3ZTiJO9xwNJcD2O0k1pIo4w"
-CHAT_ID = "8419437999"
+# ------------------ TELEGRAM (DO NOT PUT NUMBERS HERE) ------------------
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
+
+PROXIES = [
+    os.getenv("PROXY_1"),
+    os.getenv("PROXY_2"),
+    os.getenv("PROXY_3"),
+]
 
 
 def send_telegram(message):
-    if not message or len(message.strip()) == 0:
-        print("❌ EMPTY MESSAGE — NOT SENDING")
+    if not message or not message.strip():
         return
 
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-
-    payload = {
-        "chat_id": CHAT_ID,
-        "text": message
-    }
-
     try:
-        r = requests.post(url, data=payload)
-        print("TELEGRAM STATUS:", r.status_code)
-        print("TELEGRAM RESPONSE:", r.text)
-    except Exception as e:
-        print("❌ TELEGRAM ERROR:", e)
-
-
-# ------------------ CHROME ------------------
-options = Options()
-options.binary_location = "/usr/bin/chromium-browser"
-
-options.add_argument("--headless=new")
-options.add_argument("--no-sandbox")
-options.add_argument("--disable-dev-shm-usage")
-options.add_argument("--disable-gpu")
-options.add_argument("--window-size=1920,1080")
-
-# 🔥 ANTI-BOT IMPROVEMENTS
-options.add_argument("--disable-blink-features=AutomationControlled")
-options.add_argument("--disable-infobars")
-options.add_argument("--disable-extensions")
-
-options.add_argument(
-    "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125 Safari/537.36"
-)
-
-driver = webdriver.Chrome(options=options)
-wait = WebDriverWait(driver, 25)
-
-
-# ------------------ DATES ------------------
-today = datetime.date.today()
-checkin = today + datetime.timedelta(days=1)
-checkout = today + datetime.timedelta(days=2)
-
-
-# ------------------ URL ------------------
-url = (
-    "https://www.booking.com/searchresults.html"
-    f"?ss=voco+monaco+dubai"
-    f"&checkin_year={checkin.year}&checkin_month={checkin.month}&checkin_monthday={checkin.day}"
-    f"&checkout_year={checkout.year}&checkout_month={checkout.month}&checkout_monthday={checkout.day}"
-    f"&group_adults=2&no_rooms=1"
-)
-
-driver.get(url)
-time.sleep(10)
-
-
-# ------------------ COOKIE ------------------
-try:
-    wait.until(EC.element_to_be_clickable((By.ID, "onetrust-accept-btn-handler"))).click()
-except:
-    pass
-
-
-print("PAGE TITLE:", driver.title)
-
-
-# ------------------ FIND HOTEL ------------------
-try:
-    hotels = wait.until(
-        EC.presence_of_all_elements_located(
-            (By.CSS_SELECTOR, "[data-testid='property-card']")
+        requests.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+            data={"chat_id": CHAT_ID, "text": message},
+            timeout=20
         )
-    )
+    except Exception as e:
+        print("Telegram error:", e)
 
-    print("HOTELS FOUND:", len(hotels))
 
-    if len(hotels) == 0:
-        raise Exception("No hotels found (blocked)")
+def get_proxy():
+    proxies = [p for p in PROXIES if p]
+    return random.choice(proxies) if proxies else None
 
-    hotel = hotels[0]
 
-    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", hotel)
-    time.sleep(2)
+def create_driver():
+    options = uc.ChromeOptions()
+
+    user_agents = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/125 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/124 Safari/537.36",
+    ]
+
+    options.add_argument(f"user-agent={random.choice(user_agents)}")
+
+    proxy = get_proxy()
+    if proxy:
+        options.add_argument(f"--proxy-server={proxy}")
+
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--headless=new")
+    options.add_argument("--window-size=1920,1080")
+
+    return uc.Chrome(options=options)
+
+
+def scrape():
+    driver = None
 
     try:
+        driver = create_driver()
+        wait = WebDriverWait(driver, 25)
+
+        time.sleep(random.uniform(3, 7))
+
+        today = datetime.date.today()
+        checkin = today + datetime.timedelta(days=1)
+        checkout = today + datetime.timedelta(days=2)
+
+        url = (
+            "https://www.booking.com/searchresults.html"
+            f"?ss=voco+monaco+dubai"
+            f"&checkin_year={checkin.year}&checkin_month={checkin.month}&checkin_monthday={checkin.day}"
+            f"&checkout_year={checkout.year}&checkout_month={checkout.month}&checkout_monthday={checkout.day}"
+            f"&group_adults=2&no_rooms=1"
+        )
+
+        driver.get(url)
+
+        time.sleep(random.uniform(5, 10))
+
+        try:
+            wait.until(EC.element_to_be_clickable((By.ID, "onetrust-accept-btn-handler"))).click()
+        except:
+            pass
+
+        hotels = wait.until(
+            EC.presence_of_all_elements_located((By.CSS_SELECTOR, "[data-testid='property-card']"))
+        )
+
+        hotel = hotels[0]
         hotel.click()
-    except ElementClickInterceptedException:
-        driver.execute_script("arguments[0].click();", hotel)
 
-except Exception as e:
-    driver.quit()
-    send_telegram(f"❌ HOTEL PAGE ERROR:\n{e}")
-    raise
+        time.sleep(random.uniform(6, 10))
 
+        rooms = driver.find_elements(By.CSS_SELECTOR, "[data-testid='room-card']")
+        if not rooms:
+            rooms = driver.find_elements(By.CSS_SELECTOR, "tr")
 
-# ------------------ ROOMS ------------------
-time.sleep(10)
+        def extract_numbers(text):
+            return re.findall(r"\d+", text)
 
-# 🔥 TRY MULTIPLE SELECTORS (VERY IMPORTANT)
-rooms = driver.find_elements(By.CSS_SELECTOR, "[data-testid='room-card']")
+        message = f"📅 {checkin} → {checkout}\n🏨 VOCO MONACO DUBAI\n\n"
+        valid_rooms = 0
 
-if len(rooms) == 0:
-    print("⚠️ room-card not found, trying fallback...")
-    rooms = driver.find_elements(By.CSS_SELECTOR, "tr")
+        for r in rooms:
+            try:
+                text = r.text
+                prices = extract_numbers(text)
 
+                if len(prices) >= 3:
+                    valid_rooms += 1
 
-# 🔍 DEBUG SAVE PAGE
-print("PAGE SOURCE LENGTH:", len(driver.page_source))
+                    ro = float(prices[0])
+                    bf = float(prices[1])
+                    dn = float(prices[2])
 
-with open("page.html", "w", encoding="utf-8") as f:
-    f.write(driver.page_source)
+                    message += (
+                        f"{text.split(chr(10))[0]}\n"
+                        f"RO: {ro} → {round(ro*0.9,1)}\n"
+                        f"BF: {bf} → {round(bf*0.9,1)}\n"
+                        f"DN: {dn} → {round(dn*0.9,1)}\n\n"
+                    )
+            except:
+                continue
 
+        if valid_rooms == 0:
+            message = "⚠️ No rooms found"
 
-print("ROOMS FOUND:", len(rooms))
+        send_telegram(message)
 
-valid_rooms = 0
+    except Exception as e:
+        send_telegram(f"❌ ERROR:\n{str(e)}")
 
-message = f"📅 {checkin} → {checkout}\n🏨 VOCO MONACO DUBAI\n\n"
-
-
-def extract_numbers(text):
-    return re.findall(r"\d+", text)
-
-
-for r in rooms:
-    try:
-        name = r.text.split("\n")[0]
-        text = r.text
-
-        prices = extract_numbers(text)
-
-        if len(prices) >= 3:
-            valid_rooms += 1
-
-            room_only = float(prices[0])
-            breakfast = float(prices[1])
-            dinner = float(prices[2])
-
-            ro = round(room_only * 0.9, 1)
-            bf = round(breakfast * 0.9, 1)
-            dn = round(dinner * 0.9, 1)
-
-            message += (
-                f"{name}\n"
-                f"RO: {room_only} → {ro}\n"
-                f"BF: {breakfast} → {bf}\n"
-                f"DN: {dinner} → {dn}\n\n"
-            )
-
-    except:
-        continue
-
-driver.quit()
+    finally:
+        if driver:
+            driver.quit()
 
 
-# ------------------ SAFETY ------------------
-print("VALID ROOMS:", valid_rooms)
-print("MESSAGE LENGTH:", len(message))
+def main():
+    scrape()
 
 
-if valid_rooms == 0:
-    message = "⚠️ No valid rooms found.\nBooking is likely blocking GitHub IP."
-
-if len(message.strip()) < 30:
-    message = "⚠️ Scraper error: empty or invalid data."
-
-
-print("FINAL MESSAGE:\n", message)
-
-
-# ------------------ SEND ------------------
-send_telegram(message)
+if __name__ == "__main__":
+    main()
