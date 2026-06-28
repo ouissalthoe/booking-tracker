@@ -1,5 +1,5 @@
+name: Test Telegram
 
-Run: Test Telegram
 on:
   schedule:
     - cron: "0 8 * * *"
@@ -13,19 +13,18 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      # ✅ STABLE CHROME (NO DOWNLOAD, NO DEB FILES)
+      # Install Chromium
       - name: Install Chromium
         run: |
           sudo apt-get update
           sudo apt-get install -y chromium-browser chromium-chromedriver
 
-          # IMPORTANT FIX
           sudo ln -sf /usr/bin/chromium-browser /usr/bin/google-chrome
 
           chromium-browser --version || true
           chromedriver --version || true
 
-      # Python
+      # Python setup
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
@@ -34,6 +33,6 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # Run bot
+      # Run test file
       - name: Run script
-        run: python tracker.py
+        run: python test_telegram.py
