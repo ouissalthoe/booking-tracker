@@ -1,4 +1,4 @@
-name: Test Telegram Bot
+name: Booking Tracker
 
 on:
   workflow_dispatch:
@@ -10,16 +10,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 📥 Get your code
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # 🐍 Python
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
-        run: pip install requests
+      # 🌐 Install Chromium (REQUIRED for Selenium)
+      - name: Install Chromium
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser chromium-chromedriver
+          sudo ln -sf /usr/bin/chromium-browser /usr/bin/google-chrome
 
-      - name: Run Telegram test
-        run: python test_telegram.py
+      # 📦 Install Python libs
+      - name: Install dependencies
+        run: |
+          pip install selenium requests
+
+      # 🚀 Run your tracker
+      - name: Run tracker
+        run: python tracker.py
