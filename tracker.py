@@ -5,16 +5,13 @@ import re
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-
-from webdriver_manager.chrome import ChromeDriverManager
 
 from telegram import Bot
 
 
-# ------------------ YOUR INFO ------------------
+# ------------------ TELEGRAM INFO ------------------
 BOT_TOKEN = "YOUR_BOT_TOKEN"
 CHAT_ID = "YOUR_CHAT_ID"
 
@@ -22,16 +19,15 @@ CHAT_ID = "YOUR_CHAT_ID"
 # ------------------ CHROME (FIXED FOR GITHUB ACTIONS) ------------------
 options = Options()
 
+options.binary_location = "/usr/bin/chromium-browser"  # 🔥 IMPORTANT FIX
+
 options.add_argument("--headless=new")
 options.add_argument("--no-sandbox")
 options.add_argument("--disable-dev-shm-usage")
 options.add_argument("--disable-gpu")
 options.add_argument("--window-size=1920,1080")
 
-driver = webdriver.Chrome(
-    service=Service(ChromeDriverManager().install()),
-    options=options
-)
+driver = webdriver.Chrome(options=options)
 
 wait = WebDriverWait(driver, 20)
 
@@ -43,17 +39,28 @@ checkout = today + datetime.timedelta(days=2)
 
 
 # ------------------ URL ------------------
-url = f"https://www.booking.com/searchresults.html?ss=voco+monaco+dubai&checkin_year={checkin.year}&checkin_month={checkin.month}&checkin_monthday={checkin.day}&checkout_year={checkout.year}&checkout_month={checkout.month}&checkout_monthday={checkout.day}&group_adults=2&no_rooms=1"
+url = (
+    "https://www.booking.com/searchresults.html"
+    f"?ss=voco+monaco+dubai"
+    f"&checkin_year={checkin.year}&checkin_month={checkin.month}&checkin_monthday={checkin.day}"
+    f"&checkout_year={checkout.year}&checkout_month={checkout.month}&checkout_monthday={checkout.day}"
+    f"&group_adults=2&no_rooms=1"
+)
 
 driver.get(url)
 time.sleep(8)
 
 
 # ------------------ OPEN HOTEL ------------------
-hotel = wait.until(
-    EC.element_to_be_clickable((By.CSS_SELECTOR, "a[data-testid='title-link']"))
-)
-hotel.click()
+try:
+    hotel = wait.until(
+        EC.element_to_be_clickable((By.CSS_SELECTOR, "a[data-testid='title-link']"))
+    )
+    hotel.click()
+except:
+    driver.quit()
+    raise Exception("Hotel not found or page blocked")
+
 
 time.sleep(5)
 
@@ -66,24 +73,24 @@ message = f"📅 {checkin} - {checkout} BOOKING.COM\n\n"
 message += "Room category | Room Only | Breakfast | Dinner\n\n"
 
 
-def extract_prices(text):
+def extract_numbers(text):
     return re.findall(r"\d+", text)
 
 
 for r in rooms:
     try:
         name = r.find_element(By.CSS_SELECTOR, "h2").text
-
         text = r.text
-        prices = extract_prices(text)
 
-        # we expect 3 prices per room (may vary)
+        prices = extract_numbers(text)
+
+        # safer check (avoid wrong mapping)
         if len(prices) >= 3:
             room_only = float(prices[0])
             breakfast = float(prices[1])
             dinner = float(prices[2])
 
-            # apply -10%
+            # -10% discount
             ro = round(room_only * 0.9, 1)
             bf = round(breakfast * 0.9, 1)
             dn = round(dinner * 0.9, 1)
