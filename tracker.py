@@ -31,7 +31,12 @@ driver.get(url)
 time.sleep(10)
 
 # Open hotel page
-driver.find_element(By.CSS_SELECTOR, "a[data-testid='title-link']").click()
+options = Options()
+options.add_argument("--headless=new")
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
+
+driver = webdriver.Chrome(options=options)
 time.sleep(10)
 
 # Extract room data
