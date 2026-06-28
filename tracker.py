@@ -16,10 +16,10 @@ BOT_TOKEN = "YOUR_BOT_TOKEN"
 CHAT_ID = "YOUR_CHAT_ID"
 
 
-# ------------------ CHROME (FIXED FOR GITHUB ACTIONS) ------------------
+# ------------------ CHROME (GITHUB SAFE) ------------------
 options = Options()
 
-options.binary_location = "/usr/bin/chromium-browser"  # 🔥 IMPORTANT FIX
+options.binary_location = "/usr/bin/chromium-browser"
 
 options.add_argument("--headless=new")
 options.add_argument("--no-sandbox")
@@ -27,9 +27,13 @@ options.add_argument("--disable-dev-shm-usage")
 options.add_argument("--disable-gpu")
 options.add_argument("--window-size=1920,1080")
 
-driver = webdriver.Chrome(options=options)
+# 🔥 IMPORTANT: helps reduce blocking
+options.add_argument(
+    "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+)
 
-wait = WebDriverWait(driver, 20)
+driver = webdriver.Chrome(options=options)
+wait = WebDriverWait(driver, 25)
 
 
 # ------------------ DATES ------------------
@@ -48,41 +52,47 @@ url = (
 )
 
 driver.get(url)
-time.sleep(15)
 
+time.sleep(25)  # 🔥 important for Booking JS load
+
+
+# ------------------ COOKIE POPUP ------------------
 try:
     wait.until(
         EC.element_to_be_clickable((By.ID, "onetrust-accept-btn-handler"))
     ).click()
 except:
     pass
-    print(driver.title)
+
+
+# ------------------ DEBUG (VERY IMPORTANT) ------------------
+print("PAGE TITLE:", driver.title)
 driver.save_screenshot("debug.png")
 
 
-# ------------------ OPEN HOTEL ------------------
-# ------------------ OPEN HOTEL ------------------
+# ------------------ FIND HOTELS ------------------
 try:
     hotels = wait.until(
         EC.presence_of_all_elements_located(
-            (By.CSS_SELECTOR, "[data-testid='property-card']")
+            (By.XPATH, "//div[contains(@data-testid,'property-card')]")
         )
     )
 
-    if not hotels:
+    if len(hotels) == 0:
         driver.quit()
-        raise Exception("No hotels found (blocked or selector changed)")
+        raise Exception("No hotels found (blocked or empty page)")
 
     hotels[0].click()
 
-except:
+except Exception as e:
     driver.quit()
-    raise Exception("Hotel not found or page blocked")
+    raise Exception(f"Hotel page failed: {e}")
 
 
-# ------------------ GET ROOMS ------------------
+# ------------------ ROOMS ------------------
+time.sleep(8)
+
 rooms = driver.find_elements(By.CSS_SELECTOR, "[data-testid='room-card']")
-
 
 message = f"📅 {checkin} - {checkout} BOOKING.COM\n\n"
 message += "Room category | Room Only | Breakfast | Dinner\n\n"
@@ -99,13 +109,11 @@ for r in rooms:
 
         prices = extract_numbers(text)
 
-        # safer check (avoid wrong mapping)
         if len(prices) >= 3:
             room_only = float(prices[0])
             breakfast = float(prices[1])
             dinner = float(prices[2])
 
-            # -10% discount
             ro = round(room_only * 0.9, 1)
             bf = round(breakfast * 0.9, 1)
             dn = round(dinner * 0.9, 1)
