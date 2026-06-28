@@ -13,7 +13,7 @@ from telegram import Bot
 
 
 # ------------------ TELEGRAM INFO ------------------
-BOT_TOKEN = "YOUR_NEW_BOT_TOKEN_HERE"
+BOT_TOKEN = "8868846049:AAE6syp1iH8NXv2y0ehsSBiVJcdLUAmHy3g"
 CHAT_ID = 8419437999
 
 
