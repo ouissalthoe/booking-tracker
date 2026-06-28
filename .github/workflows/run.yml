@@ -13,19 +13,19 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Install Chrome + Driver (FIXED)
+      # ✅ INSTALL GOOGLE CHROME PROPERLY (FIX)
+      - name: Install Google Chrome
         run: |
+          wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
           sudo apt-get update
-          sudo apt-get install -y chromium-browser chromium-chromedriver
+          sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
 
-          # FIX: make chromium act as google-chrome (IMPORTANT)
-          sudo ln -sf /usr/bin/chromium-browser /usr/bin/google-chrome
+      # ✅ VERIFY
+      - name: Check Chrome
+        run: google-chrome --version
 
-          which chromium-browser
-          which chromedriver
-          google-chrome --version || chromium-browser --version
-
-      - name: Install Python
+      # Python
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
@@ -33,5 +33,6 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      # Run script
       - name: Run script
         run: python tracker.py
