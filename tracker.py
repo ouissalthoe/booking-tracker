@@ -12,8 +12,8 @@ from selenium.common.exceptions import ElementClickInterceptedException
 
 
 # ------------------ TELEGRAM INFO ------------------
-BOT_TOKEN = "8752290947:AAGdhXELc0JY3ZTiJO9xwNJcD2O0k1pIo4w"
-CHAT_ID = "8419437999"
+BOT_TOKEN = "YOUR_TOKEN"
+CHAT_ID = "YOUR_CHAT_ID"
 
 
 def send_telegram(message):
@@ -46,8 +46,13 @@ options.add_argument("--disable-dev-shm-usage")
 options.add_argument("--disable-gpu")
 options.add_argument("--window-size=1920,1080")
 
+# 🔥 ANTI-BOT IMPROVEMENTS
+options.add_argument("--disable-blink-features=AutomationControlled")
+options.add_argument("--disable-infobars")
+options.add_argument("--disable-extensions")
+
 options.add_argument(
-    "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
+    "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125 Safari/537.36"
 )
 
 driver = webdriver.Chrome(options=options)
@@ -113,9 +118,23 @@ except Exception as e:
 
 
 # ------------------ ROOMS ------------------
-time.sleep(8)
+time.sleep(10)
 
+# 🔥 TRY MULTIPLE SELECTORS (VERY IMPORTANT)
 rooms = driver.find_elements(By.CSS_SELECTOR, "[data-testid='room-card']")
+
+if len(rooms) == 0:
+    print("⚠️ room-card not found, trying fallback...")
+    rooms = driver.find_elements(By.CSS_SELECTOR, "tr")
+
+
+# 🔍 DEBUG SAVE PAGE
+print("PAGE SOURCE LENGTH:", len(driver.page_source))
+
+with open("page.html", "w", encoding="utf-8") as f:
+    f.write(driver.page_source)
+
+
 print("ROOMS FOUND:", len(rooms))
 
 valid_rooms = 0
@@ -129,7 +148,7 @@ def extract_numbers(text):
 
 for r in rooms:
     try:
-        name = r.find_element(By.CSS_SELECTOR, "h2").text
+        name = r.text.split("\n")[0]
         text = r.text
 
         prices = extract_numbers(text)
@@ -164,7 +183,7 @@ print("MESSAGE LENGTH:", len(message))
 
 
 if valid_rooms == 0:
-    message = "⚠️ No valid rooms found.\nBooking may be blocking or layout changed."
+    message = "⚠️ No valid rooms found.\nBooking is likely blocking GitHub IP."
 
 if len(message.strip()) < 30:
     message = "⚠️ Scraper error: empty or invalid data."
