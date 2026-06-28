@@ -13,11 +13,11 @@ from telegram import Bot
 
 
 # ------------------ TELEGRAM INFO ------------------
-BOT_TOKEN = "8868846049:AAE6syp1iH8NXv2y0ehsSBiVJcdLUAmHy3g"
+BOT_TOKEN = "YOUR_NEW_BOT_TOKEN_HERE"
 CHAT_ID = 8419437999
 
 
-# ------------------ CHROME ------------------
+# ------------------ CHROME (GITHUB / CLOUD SAFE) ------------------
 options = Options()
 options.binary_location = "/usr/bin/chromium-browser"
 
@@ -28,7 +28,7 @@ options.add_argument("--disable-gpu")
 options.add_argument("--window-size=1920,1080")
 
 options.add_argument(
-    "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 )
 
 driver = webdriver.Chrome(options=options)
@@ -51,10 +51,11 @@ url = (
 )
 
 driver.get(url)
-time.sleep(25)
+
+time.sleep(15)
 
 
-# ------------------ COOKIE ------------------
+# ------------------ COOKIE POPUP ------------------
 try:
     wait.until(
         EC.element_to_be_clickable((By.ID, "onetrust-accept-btn-handler"))
@@ -63,44 +64,53 @@ except:
     pass
 
 
-# ------------------ HOTELS ------------------
-hotels = wait.until(
-    EC.presence_of_all_elements_located(
-        (By.XPATH, "//div[contains(@data-testid,'property-card')]")
-    )
-)
+# ------------------ DEBUG ------------------
+print("PAGE TITLE:", driver.title)
+driver.save_screenshot("debug.png")
 
-print("HOTELS FOUND:", len(hotels))
 
-if len(hotels) == 0:
-    driver.quit()
-    raise Exception("No hotels found")
-
-hotel = hotels[0]
-
-driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", hotel)
-time.sleep(2)
-
+# ------------------ FIND HOTELS ------------------
 try:
-    hotel.click()
-except ElementClickInterceptedException:
-    driver.execute_script("arguments[0].click();", hotel)
+    hotels = wait.until(
+        EC.presence_of_all_elements_located(
+            (By.CSS_SELECTOR, "[data-testid='property-card']")
+        )
+    )
+
+    print("HOTELS FOUND:", len(hotels))
+
+    if len(hotels) == 0:
+        raise Exception("No hotels found (blocked or empty page)")
+
+    hotel = hotels[0]
+
+    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", hotel)
+    time.sleep(2)
+
+    try:
+        hotel.click()
+    except ElementClickInterceptedException:
+        driver.execute_script("arguments[0].click();", hotel)
+
+except Exception as e:
+    driver.quit()
+    message = f"❌ HOTEL PAGE ERROR:\n{e}"
+
+    bot = Bot(token=BOT_TOKEN)
+    bot.send_message(chat_id=CHAT_ID, text=message)
+    raise
 
 
 # ------------------ ROOMS ------------------
-time.sleep(8)
+time.sleep(10)
 
 rooms = driver.find_elements(By.CSS_SELECTOR, "[data-testid='room-card']")
+
 print("ROOMS FOUND:", len(rooms))
 
-if len(rooms) == 0:
-    driver.quit()
-    raise Exception("❌ No rooms found → Booking blocked or selector broken")
+valid_rooms = 0
 
-
-# ------------------ MESSAGE BUILD ------------------
 message = f"📅 {checkin} - {checkout} BOOKING.COM\n\n"
-message += "Room category | Room Only | Breakfast | Dinner\n\n"
 
 
 def extract_numbers(text):
@@ -115,6 +125,8 @@ for r in rooms:
         prices = extract_numbers(text)
 
         if len(prices) >= 3:
+            valid_rooms += 1
+
             room_only = float(prices[0])
             breakfast = float(prices[1])
             dinner = float(prices[2])
@@ -129,22 +141,30 @@ for r in rooms:
     except:
         continue
 
-
 driver.quit()
 
 
-# ------------------ SAFETY CHECK ------------------
-print("FINAL MESSAGE LENGTH:", len(message))
-
-if len(message) < 150:
-    message = "⚠️ No valid room data found or Booking blocked."
+# ------------------ SAFETY CHECKS ------------------
+print("VALID ROOMS:", valid_rooms)
+print("MESSAGE LENGTH:", len(message))
 
 
-# ------------------ TELEGRAM ------------------
+if valid_rooms == 0:
+    message = "⚠️ NO VALID ROOMS FOUND\nBooking blocked OR page structure changed."
+
+if len(message.strip()) < 50:
+    message = "⚠️ SCRAPER ERROR: Empty output generated"
+
+
+# ------------------ TELEGRAM SEND ------------------
+print("FINAL MESSAGE:")
+print(message)
+
 try:
-    bot = Bot(token=8868846049:AAE6syp1iH8NXv2y0ehsSBiVJcdLUAmHy3g)
-    bot.send_message(chat_id=8419437999, text=message)
+    bot = Bot(token=BOT_TOKEN)
+    bot.send_message(chat_id=CHAT_ID, text=message)
     print("TELEGRAM SENT SUCCESSFULLY")
+
 except Exception as e:
     print("TELEGRAM ERROR:", e)
     raise
