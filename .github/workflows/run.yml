@@ -1,5 +1,5 @@
 
-Run: Tracker Daily
+Run: Test Telegram
 on:
   schedule:
     - cron: "0 8 * * *"
