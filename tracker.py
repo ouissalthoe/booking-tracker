@@ -12,8 +12,8 @@ from selenium.common.exceptions import ElementClickInterceptedException
 
 
 # ------------------ TELEGRAM INFO ------------------
-BOT_TOKEN = "YOUR_TOKEN"
-CHAT_ID = "YOUR_CHAT_ID"
+BOT_TOKEN = "8752290947:AAGdhXELc0JY3ZTiJO9xwNJcD2O0k1pIo4w"
+CHAT_ID = "8419437999"
 
 
 def send_telegram(message):
