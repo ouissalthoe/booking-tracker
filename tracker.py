@@ -61,24 +61,23 @@ driver.save_screenshot("debug.png")
 
 
 # ------------------ OPEN HOTEL ------------------
+# ------------------ OPEN HOTEL ------------------
 try:
-   hotels = wait.until(
-    EC.presence_of_all_elements_located(
-        (By.CSS_SELECTOR, "[data-testid='property-card']")
+    hotels = wait.until(
+        EC.presence_of_all_elements_located(
+            (By.CSS_SELECTOR, "[data-testid='property-card']")
+        )
     )
-)
 
-if not hotels:
-    driver.quit()
-    raise Exception("No hotels found (blocked or selector changed)")
+    if not hotels:
+        driver.quit()
+        raise Exception("No hotels found (blocked or selector changed)")
 
-hotels[0].click()
+    hotels[0].click()
+
 except:
     driver.quit()
     raise Exception("Hotel not found or page blocked")
-
-
-time.sleep(5)
 
 
 # ------------------ GET ROOMS ------------------
