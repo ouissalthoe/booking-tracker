@@ -10,21 +10,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout your repo
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Setup Python
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
-      # Install dependencies
       - name: Install dependencies
-        run: |
-          pip install requests
+        run: pip install requests
 
-      # Run Telegram test script
       - name: Run Telegram test
         run: python test_telegram.py
