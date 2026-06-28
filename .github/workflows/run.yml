@@ -1,5 +1,4 @@
-# Run bot
-- name: Run script
+
   run: test_telegram.py
 
 on:
