@@ -7,15 +7,12 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-
 from telegram import Bot
 
 
-# 🔴 PUT YOUR INFO HERE (IMPORTANT)
-BOT_TOKEN = "8868846049:AAE6syp1iH8NXv2y0ehsSBiVJcdLUAmHy3g"
-CHAT_ID = "8419437999"
+# ----------------- YOUR INFO -----------------
+BOT_TOKEN = "PUT_NEW_TOKEN_HERE"
+CHAT_ID = "YOUR_CHAT_ID"
 
 
 # ----------------- CHROME SETUP -----------------
@@ -24,10 +21,7 @@ options.add_argument("--headless=new")
 options.add_argument("--no-sandbox")
 options.add_argument("--disable-dev-shm-usage")
 
-driver = webdriver.Chrome(
-    service=Service(ChromeDriverManager().install()),
-    options=options
-)
+driver = webdriver.Chrome()   # ✅ FIXED HERE
 
 wait = WebDriverWait(driver, 20)
 
