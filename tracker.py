@@ -150,7 +150,7 @@ if len(message) < 120:
 
 try:
     bot = Bot(token=BOT_TOKEN)
-    bot.send_message(chat_id=CHAT_ID, text=message)
+    bot.send_message(chat_id=8419437999, text=message)
     print("TELEGRAM SENT SUCCESSFULLY")
 except Exception as e:
     print("TELEGRAM ERROR:", e)
