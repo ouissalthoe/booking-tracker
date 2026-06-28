@@ -48,15 +48,31 @@ url = (
 )
 
 driver.get(url)
-time.sleep(8)
+time.sleep(15)
+
+try:
+    wait.until(
+        EC.element_to_be_clickable((By.ID, "onetrust-accept-btn-handler"))
+    ).click()
+except:
+    pass
+    print(driver.title)
+driver.save_screenshot("debug.png")
 
 
 # ------------------ OPEN HOTEL ------------------
 try:
-    hotel = wait.until(
-        EC.element_to_be_clickable((By.CSS_SELECTOR, "a[data-testid='title-link']"))
+   hotels = wait.until(
+    EC.presence_of_all_elements_located(
+        (By.CSS_SELECTOR, "[data-testid='property-card']")
     )
-    hotel.click()
+)
+
+if not hotels:
+    driver.quit()
+    raise Exception("No hotels found (blocked or selector changed)")
+
+hotels[0].click()
 except:
     driver.quit()
     raise Exception("Hotel not found or page blocked")
