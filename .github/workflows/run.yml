@@ -1,6 +1,6 @@
 # Run bot
 - name: Run script
-  run: python test_telegram.py
+  run: test_telegram.py
 
 on:
   schedule:
