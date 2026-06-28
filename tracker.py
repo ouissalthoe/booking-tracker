@@ -78,17 +78,17 @@ try:
         )
     )
 
-    if not hotels:
+    print("HOTELS FOUND:", len(hotels))
+
+    if len(hotels) == 0:
         driver.quit()
         raise Exception("No hotels found (blocked or empty page)")
 
     hotel = hotels[0]
 
-    # 🔥 FIX: scroll into view first
     driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", hotel)
     time.sleep(2)
 
-    # 🔥 FIX: safe click with fallback
     try:
         hotel.click()
     except ElementClickInterceptedException:
@@ -103,6 +103,8 @@ except Exception as e:
 time.sleep(8)
 
 rooms = driver.find_elements(By.CSS_SELECTOR, "[data-testid='room-card']")
+
+print("ROOMS FOUND:", len(rooms))
 
 message = f"📅 {checkin} - {checkout} BOOKING.COM\n\n"
 message += "Room category | Room Only | Breakfast | Dinner\n\n"
@@ -138,8 +140,17 @@ for r in rooms:
 driver.quit()
 
 
-# ------------------ TELEGRAM ------------------
-bot = Bot(token=BOT_TOKEN)
-bot.send_message(chat_id=CHAT_ID, text=message)
+# ------------------ TELEGRAM (FIXED + SAFE) ------------------
 
-print("DONE")
+print("FINAL MESSAGE LENGTH:", len(message))
+print(message)
+
+if len(message) < 120:
+    message = "⚠️ No rooms found or Booking blocked. Check scraper."
+
+try:
+    bot = Bot(token=BOT_TOKEN)
+    bot.send_message(chat_id=CHAT_ID, text=message)
+    print("TELEGRAM SENT SUCCESSFULLY")
+except Exception as e:
+    print("TELEGRAM ERROR:", e)
