@@ -1,19 +1,19 @@
-from telegram import Bot
+import requests
+
 
 BOT_TOKEN = "8868846049:AAE6syp1iH8NXv2y0ehsSBiVJcdLUAmHy3g"
 CHAT_ID = 8419437999
 
-print("STARTING TELEGRAM TEST")
+message = "🔥 TEST MESSAGE FROM GITHUB"
 
-bot = Bot(token=BOT_TOKEN)
+url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
-try:
-    response = bot.send_message(
-        chat_id=CHAT_ID,
-        text="🔥 TEST MESSAGE FROM BOT"
-    )
-    print("SUCCESS:", response)
+payload = {
+    "chat_id": CHAT_ID,
+    "text": message
+}
 
-except Exception as e:
-    print("FAILED:", e)
-    raise
+response = requests.post(url, data=payload)
+
+print("STATUS CODE:", response.status_code)
+print("RESPONSE:", response.text)
