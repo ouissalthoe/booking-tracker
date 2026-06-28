@@ -7,6 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import ElementClickInterceptedException
 
 from telegram import Bot
 
@@ -27,7 +28,6 @@ options.add_argument("--disable-dev-shm-usage")
 options.add_argument("--disable-gpu")
 options.add_argument("--window-size=1920,1080")
 
-# 🔥 IMPORTANT: helps reduce blocking
 options.add_argument(
     "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 )
@@ -53,7 +53,7 @@ url = (
 
 driver.get(url)
 
-time.sleep(25)  # 🔥 important for Booking JS load
+time.sleep(25)
 
 
 # ------------------ COOKIE POPUP ------------------
@@ -65,7 +65,7 @@ except:
     pass
 
 
-# ------------------ DEBUG (VERY IMPORTANT) ------------------
+# ------------------ DEBUG ------------------
 print("PAGE TITLE:", driver.title)
 driver.save_screenshot("debug.png")
 
@@ -78,11 +78,21 @@ try:
         )
     )
 
-    if len(hotels) == 0:
+    if not hotels:
         driver.quit()
         raise Exception("No hotels found (blocked or empty page)")
 
-    hotels[0].click()
+    hotel = hotels[0]
+
+    # 🔥 FIX: scroll into view first
+    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", hotel)
+    time.sleep(2)
+
+    # 🔥 FIX: safe click with fallback
+    try:
+        hotel.click()
+    except ElementClickInterceptedException:
+        driver.execute_script("arguments[0].click();", hotel)
 
 except Exception as e:
     driver.quit()
