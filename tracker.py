@@ -11,7 +11,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 
-# ------------------ TELEGRAM (DO NOT PUT NUMBERS HERE) ------------------
+# ------------------ ENV ------------------
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
@@ -22,6 +22,7 @@ PROXIES = [
 ]
 
 
+# ------------------ TELEGRAM ------------------
 def send_telegram(message):
     if not message or not message.strip():
         return
@@ -36,11 +37,13 @@ def send_telegram(message):
         print("Telegram error:", e)
 
 
+# ------------------ PROXY ------------------
 def get_proxy():
     proxies = [p for p in PROXIES if p]
     return random.choice(proxies) if proxies else None
 
 
+# ------------------ DRIVER (FIXED CHROME ISSUE) ------------------
 def create_driver():
     options = uc.ChromeOptions()
 
@@ -60,9 +63,16 @@ def create_driver():
     options.add_argument("--headless=new")
     options.add_argument("--window-size=1920,1080")
 
-    return uc.Chrome(options=options)
+    # IMPORTANT FIX FOR YOUR ERROR
+    driver = uc.Chrome(
+        options=options,
+        version_main=149
+    )
+
+    return driver
 
 
+# ------------------ SCRAPER ------------------
 def scrape():
     driver = None
 
@@ -89,12 +99,16 @@ def scrape():
         time.sleep(random.uniform(5, 10))
 
         try:
-            wait.until(EC.element_to_be_clickable((By.ID, "onetrust-accept-btn-handler"))).click()
+            wait.until(
+                EC.element_to_be_clickable((By.ID, "onetrust-accept-btn-handler"))
+            ).click()
         except:
             pass
 
         hotels = wait.until(
-            EC.presence_of_all_elements_located((By.CSS_SELECTOR, "[data-testid='property-card']"))
+            EC.presence_of_all_elements_located(
+                (By.CSS_SELECTOR, "[data-testid='property-card']")
+            )
         )
 
         hotel = hotels[0]
@@ -126,15 +140,15 @@ def scrape():
 
                     message += (
                         f"{text.split(chr(10))[0]}\n"
-                        f"RO: {ro} → {round(ro*0.9,1)}\n"
-                        f"BF: {bf} → {round(bf*0.9,1)}\n"
-                        f"DN: {dn} → {round(dn*0.9,1)}\n\n"
+                        f"RO: {ro} → {round(ro * 0.9, 1)}\n"
+                        f"BF: {bf} → {round(bf * 0.9, 1)}\n"
+                        f"DN: {dn} → {round(dn * 0.9, 1)}\n\n"
                     )
             except:
                 continue
 
         if valid_rooms == 0:
-            message = "⚠️ No rooms found"
+            message = "⚠️ No rooms found (blocked or layout changed)"
 
         send_telegram(message)
 
@@ -146,6 +160,7 @@ def scrape():
             driver.quit()
 
 
+# ------------------ MAIN ------------------
 def main():
     scrape()
 
