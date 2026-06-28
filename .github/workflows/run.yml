@@ -1,6 +1,5 @@
 
-  run: test_telegram.py
-
+Run: Tracker Daily
 on:
   schedule:
     - cron: "0 8 * * *"
