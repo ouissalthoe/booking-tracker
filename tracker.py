@@ -11,7 +11,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 
-# ------------------ ENV ------------------
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
@@ -22,8 +21,9 @@ PROXIES = [
 ]
 
 
-# ------------------ TELEGRAM ------------------
 def send_telegram(message):
+    print("DEBUG TELEGRAM:", message)
+
     if not message or not message.strip():
         return
 
@@ -37,50 +37,34 @@ def send_telegram(message):
         print("Telegram error:", e)
 
 
-# ------------------ PROXY ------------------
 def get_proxy():
     proxies = [p for p in PROXIES if p]
     return random.choice(proxies) if proxies else None
 
 
-# ------------------ DRIVER (FIXED CHROME ISSUE) ------------------
 def create_driver():
     options = uc.ChromeOptions()
-
-    user_agents = [
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/125 Safari/537.36",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/124 Safari/537.36",
-    ]
-
-    options.add_argument(f"user-agent={random.choice(user_agents)}")
-
-    proxy = get_proxy()
-    if proxy:
-        options.add_argument(f"--proxy-server={proxy}")
 
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--headless=new")
     options.add_argument("--window-size=1920,1080")
 
-    # IMPORTANT FIX FOR YOUR ERROR
-    driver = uc.Chrome(
-        options=options,
-        version_main=149
-    )
+    print("DEBUG: starting Chrome...")
+
+    driver = uc.Chrome(options=options, version_main=149)
+
+    print("DEBUG: Chrome started successfully")
 
     return driver
 
 
-# ------------------ SCRAPER ------------------
 def scrape():
     driver = None
 
     try:
         driver = create_driver()
         wait = WebDriverWait(driver, 25)
-
-        time.sleep(random.uniform(3, 7))
 
         today = datetime.date.today()
         checkin = today + datetime.timedelta(days=1)
@@ -89,70 +73,35 @@ def scrape():
         url = (
             "https://www.booking.com/searchresults.html"
             f"?ss=voco+monaco+dubai"
-            f"&checkin_year={checkin.year}&checkin_month={checkin.month}&checkin_monthday={checkin.day}"
-            f"&checkout_year={checkout.year}&checkout_month={checkout.month}&checkout_monthday={checkout.day}"
-            f"&group_adults=2&no_rooms=1"
         )
 
+        print("DEBUG: opening URL")
         driver.get(url)
 
-        time.sleep(random.uniform(5, 10))
+        time.sleep(8)
 
-        try:
-            wait.until(
-                EC.element_to_be_clickable((By.ID, "onetrust-accept-btn-handler"))
-            ).click()
-        except:
-            pass
+        print("DEBUG: page loaded")
 
-        hotels = wait.until(
-            EC.presence_of_all_elements_located(
-                (By.CSS_SELECTOR, "[data-testid='property-card']")
-            )
-        )
+        hotels = driver.find_elements(By.CSS_SELECTOR, "[data-testid='property-card']")
 
-        hotel = hotels[0]
-        hotel.click()
+        print("DEBUG hotels:", len(hotels))
 
-        time.sleep(random.uniform(6, 10))
+        if not hotels:
+            raise Exception("No hotels found")
+
+        hotels[0].click()
+
+        time.sleep(8)
 
         rooms = driver.find_elements(By.CSS_SELECTOR, "[data-testid='room-card']")
-        if not rooms:
-            rooms = driver.find_elements(By.CSS_SELECTOR, "tr")
 
-        def extract_numbers(text):
-            return re.findall(r"\d+", text)
+        print("DEBUG rooms:", len(rooms))
 
-        message = f"📅 {checkin} → {checkout}\n🏨 VOCO MONACO DUBAI\n\n"
-        valid_rooms = 0
-
-        for r in rooms:
-            try:
-                text = r.text
-                prices = extract_numbers(text)
-
-                if len(prices) >= 3:
-                    valid_rooms += 1
-
-                    ro = float(prices[0])
-                    bf = float(prices[1])
-                    dn = float(prices[2])
-
-                    message += (
-                        f"{text.split(chr(10))[0]}\n"
-                        f"RO: {ro} → {round(ro * 0.9, 1)}\n"
-                        f"BF: {bf} → {round(bf * 0.9, 1)}\n"
-                        f"DN: {dn} → {round(dn * 0.9, 1)}\n\n"
-                    )
-            except:
-                continue
-
-        if valid_rooms == 0:
-            message = "⚠️ No rooms found (blocked or layout changed)"
-
+        message = "BOT WORKING\n\n"
         send_telegram(message)
 
     except Exception as e:
+        print("ERROR OCCURED:", str(e))
         send_telegram(f"❌ ERROR:\n{str(e)}")
 
     finally:
@@ -160,8 +109,8 @@ def scrape():
             driver.quit()
 
 
-# ------------------ MAIN ------------------
 def main():
+    print("BOT STARTED")
     scrape()
 
 
