@@ -14,12 +14,11 @@ from telegram import Bot
 
 # ------------------ TELEGRAM INFO ------------------
 BOT_TOKEN = "8868846049:AAE6syp1iH8NXv2y0ehsSBiVJcdLUAmHy3g"
-CHAT_ID = "8419437999"
+CHAT_ID = 8419437999
 
 
-# ------------------ CHROME (GITHUB SAFE) ------------------
+# ------------------ CHROME ------------------
 options = Options()
-
 options.binary_location = "/usr/bin/chromium-browser"
 
 options.add_argument("--headless=new")
@@ -29,7 +28,7 @@ options.add_argument("--disable-gpu")
 options.add_argument("--window-size=1920,1080")
 
 options.add_argument(
-    "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
 )
 
 driver = webdriver.Chrome(options=options)
@@ -52,11 +51,10 @@ url = (
 )
 
 driver.get(url)
-
 time.sleep(25)
 
 
-# ------------------ COOKIE POPUP ------------------
+# ------------------ COOKIE ------------------
 try:
     wait.until(
         EC.element_to_be_clickable((By.ID, "onetrust-accept-btn-handler"))
@@ -65,47 +63,42 @@ except:
     pass
 
 
-# ------------------ DEBUG ------------------
-print("PAGE TITLE:", driver.title)
-driver.save_screenshot("debug.png")
-
-
-# ------------------ FIND HOTELS ------------------
-try:
-    hotels = wait.until(
-        EC.presence_of_all_elements_located(
-            (By.XPATH, "//div[contains(@data-testid,'property-card')]")
-        )
+# ------------------ HOTELS ------------------
+hotels = wait.until(
+    EC.presence_of_all_elements_located(
+        (By.XPATH, "//div[contains(@data-testid,'property-card')]")
     )
+)
 
-    print("HOTELS FOUND:", len(hotels))
+print("HOTELS FOUND:", len(hotels))
 
-    if len(hotels) == 0:
-        driver.quit()
-        raise Exception("No hotels found (blocked or empty page)")
-
-    hotel = hotels[0]
-
-    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", hotel)
-    time.sleep(2)
-
-    try:
-        hotel.click()
-    except ElementClickInterceptedException:
-        driver.execute_script("arguments[0].click();", hotel)
-
-except Exception as e:
+if len(hotels) == 0:
     driver.quit()
-    raise Exception(f"Hotel page failed: {e}")
+    raise Exception("No hotels found")
+
+hotel = hotels[0]
+
+driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", hotel)
+time.sleep(2)
+
+try:
+    hotel.click()
+except ElementClickInterceptedException:
+    driver.execute_script("arguments[0].click();", hotel)
 
 
 # ------------------ ROOMS ------------------
 time.sleep(8)
 
 rooms = driver.find_elements(By.CSS_SELECTOR, "[data-testid='room-card']")
-
 print("ROOMS FOUND:", len(rooms))
 
+if len(rooms) == 0:
+    driver.quit()
+    raise Exception("❌ No rooms found → Booking blocked or selector broken")
+
+
+# ------------------ MESSAGE BUILD ------------------
 message = f"📅 {checkin} - {checkout} BOOKING.COM\n\n"
 message += "Room category | Room Only | Breakfast | Dinner\n\n"
 
@@ -140,17 +133,18 @@ for r in rooms:
 driver.quit()
 
 
-# ------------------ TELEGRAM (FIXED + SAFE) ------------------
-
+# ------------------ SAFETY CHECK ------------------
 print("FINAL MESSAGE LENGTH:", len(message))
-print(message)
 
-if len(message) < 120:
-    message = "⚠️ No rooms found or Booking blocked. Check scraper."
+if len(message) < 150:
+    message = "⚠️ No valid room data found or Booking blocked."
 
+
+# ------------------ TELEGRAM ------------------
 try:
-    bot = Bot(token=BOT_TOKEN)
+    bot = Bot(token=8868846049:AAE6syp1iH8NXv2y0ehsSBiVJcdLUAmHy3g)
     bot.send_message(chat_id=8419437999, text=message)
     print("TELEGRAM SENT SUCCESSFULLY")
 except Exception as e:
     print("TELEGRAM ERROR:", e)
+    raise
