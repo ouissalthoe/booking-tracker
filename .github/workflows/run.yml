@@ -28,4 +28,4 @@ jobs:
           PROXY_1: ${{ secrets.PROXY_1 }}
           PROXY_2: ${{ secrets.PROXY_2 }}
           PROXY_3: ${{ secrets.PROXY_3 }}
-        run: python script.py
+        run: python tracker.py
