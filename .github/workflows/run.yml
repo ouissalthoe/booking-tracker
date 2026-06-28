@@ -13,13 +13,18 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Install Chrome + Driver
+      - name: Install Chrome + Driver (FIXED)
         run: |
           sudo apt-get update
           sudo apt-get install -y chromium-browser chromium-chromedriver
+
+          # FIX: make chromium act as google-chrome (IMPORTANT)
+          sudo ln -sf /usr/bin/chromium-browser /usr/bin/google-chrome
+
           which chromium-browser
           which chromedriver
-          
+          google-chrome --version || chromium-browser --version
+
       - name: Install Python
         uses: actions/setup-python@v4
         with:
