@@ -1,38 +1,30 @@
-name: Test Telegram
+name: Test Telegram Bot
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: "0 8 * * *"
-  workflow_dispatch:
 
 jobs:
   run-script:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      # Checkout your repo
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Install Chromium
-      - name: Install Chromium
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y chromium-browser chromium-chromedriver
-
-          sudo ln -sf /usr/bin/chromium-browser /usr/bin/google-chrome
-
-          chromium-browser --version || true
-          chromedriver --version || true
-
-      # Python setup
-      - name: Setup Python
+      # Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
+      # Install dependencies
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install requests
 
-      # Run test file
-      - name: Run script
+      # Run Telegram test script
+      - name: Run Telegram test
         run: python test_telegram.py
